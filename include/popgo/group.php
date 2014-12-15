@@ -49,7 +49,7 @@ class Group {
 	    }
     }
 
-	function __get( $name ){
+	public function __get( $name ){
 		if($name == 'group_data') {
 			$this->init_from_database();
 			return $this->group_data;
@@ -58,6 +58,10 @@ class Group {
 	}
 
 	private function init_from_database(){
+		if(!$this->group_id){
+			$this->group_data = null;
+			return;
+		}
 		// SQL操作
 		$sql_result = $this->data_access->mysql()->query("SELECT groupid, groupname, groupleader, intro, `right`, url, addtime, `disabled`  FROM groups WHERE groupid = '". $this->group_id ."'");
 

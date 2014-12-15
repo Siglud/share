@@ -14,8 +14,12 @@ use Exception;
 
 class User {
 	private $dao;
+
+	private $user_id;
+
 	private $group;
 
+	private $user_name;
 	/**
 	 * @param string $user_id
 	 * @param object $user_data
@@ -24,7 +28,7 @@ class User {
     {
 	    $this->dao = Data_access::get_instance();
 
-        if(is_int($user_id)){
+        if(is_numeric($user_id)){
             $this->user_id = $user_id;
         }
 	    if($user_data){
@@ -33,7 +37,7 @@ class User {
 	    }
     }
 
-	function __get( $name ){
+	public function __get( $name ){
 		if($name == 'user_data') {
 			$this->init_from_database();
 			return $this->user_data;
@@ -42,6 +46,10 @@ class User {
 	}
 
     private function init_from_database(){
+	    if(!$this->user_id){
+		    $this->user_data = null;
+		    return;
+	    }
         $sql = 'SELECT userid, username, groupid, advuser, disabled, email, uploaders, lastlogin  FROM user WHERE userid = ' . $this->user_id;
         $sql_result = $this->dao->mysql()->query($sql);
 
@@ -90,10 +98,13 @@ class User {
     }
 
     /**
-     * @return mixed
+     * @return PopgoText
      */
     public function getUserName(){
-        return $this->user_data->username;
+        if(!$this->user_name){
+	        $this->user_name = new PopgoText($this->user_data->username);
+        }
+	    return $this->user_name;
     }
 
 	/**

@@ -8,7 +8,7 @@
 
 namespace popgo;
 
-require_once '../site-load.php';
+require_once 'site-load.php';
 
 use popgo\Data_access;
 use PHPUnit_Framework_TestCase;

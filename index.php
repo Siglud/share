@@ -8,10 +8,17 @@
  * @var $global_config \config\config
  */
 
-include_once 'init.php';
-include_once 'include/user.php';
+require_once('site-load.php');
 
-$this_user = new popgo\user(1);
+$site = new \popgo\SiteShare();
 
+$anime_list = $site->get_recent_category_share(1, 20);
 
-print_r($this_user->getUserId());
+$header = new \popgo\PopgoSEO();
+
+$page_data = array(
+	'header' => $header,
+	'anime_list' => $anime_list
+);
+
+template_require('main_body.phtml', $page_data);

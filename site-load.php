@@ -21,3 +21,25 @@ function auto_loader($class){
 }
 
 spl_autoload_register('auto_loader');
+
+function template_require($name, $page_data){
+	$target = $name;
+
+	if(is_file( ABS_PATH . 'templates/' . $name)){
+		require_once( ABS_PATH . 'templates/header.phtml');
+	}
+}
+
+function template_content_require($name, $page_data){
+	if(is_file( ABS_PATH . 'templates/' . $name)){
+		require_once( ABS_PATH . 'templates/' . $name);
+	}
+}
+
+function template_footer(){
+	if(is_file( ABS_PATH . 'templates/footer.phtml')){
+		require_once( ABS_PATH . 'templates/footer.phtml');
+	}
+}
+
+date_default_timezone_set('Asia/Chongqing');
