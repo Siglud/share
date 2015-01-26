@@ -61,6 +61,7 @@ class SiteShare {
 					array_push($data, new ShareList($data_packet));
 				}
 			}
+			$res->free_result();
 			return $data;
 		}
 		return null;

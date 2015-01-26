@@ -72,10 +72,8 @@ class Share {
 		$sql_res = $this->dao->mysql()->query($sql);
 
 		if($sql_res){
-			while($sql_data = $sql_res->fetch_object()){
-				$this->share_data = $sql_data;
-				break;
-			}
+			$this->share_data = $sql_res->fetch_object();
+			$sql_res->free_result();
 		}else{
 			$this->share_data = null;
 		}

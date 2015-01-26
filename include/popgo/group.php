@@ -67,10 +67,8 @@ class Group {
 
 		$this->group_data = null;
 		if($sql_result) {
-			while ( $group_data = $sql_result->fetch_object() ) {
-				$this->group_data = $group_data;
-				break;
-			}
+			$this->group_data = $sql_result->fetch_object();
+			$sql_result->free_result();
 		}
 		$sql_result -> close();
 	}

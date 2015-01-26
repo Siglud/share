@@ -49,10 +49,8 @@ class Category {
 			$sql_res = $this->dao->mysql()->query($sql);
 
 			if($sql_res){
-				while($sql_data = $sql_res->fetch_object()){
-					$this->category_data = $sql_data;
-					return;
-				}
+				$this->category_data = $sql_res->fetch_object();
+				$sql_res->free_result();
 			}else{
 				$this->category_data = null;
 			}
@@ -82,5 +80,19 @@ class Category {
 
 	public function exists(){
 		return $this->cid AND $this->category_data;
+	}
+
+	public function add_new($sort_name, $sort_right){
+		if($sort_name AND $sort_right AND (int) $sort_right == $sort_right){
+			$this->dao->mysql()->query("INSERT INTO sort (sortname, `right`) VALUES ('". $this->dao->mysql()->escape_string($sort_name) ."', $sort_right)");
+			return $new_id = $this->dao->mysql()->insert_id;
+		}
+		return null;
+	}
+
+	public function edit($sort_id, $sort_name, $sort_right){
+		if($sort_id AND $sort_name AND $sort_right AND (int) $sort_right == $sort_right AND (int) $sort_id == $sort_id){
+			$this->dao->mysql()->query( "UPDATE sort SET sortname = '" . $this->dao->mysql()->escape_string( $sort_name ) . "', `right`='" . $this->dao->mysql()->escape_string( $sort_right ) . "' WHERE sortid = '" . $this->dao->mysql()->escape_string( $sort_id ) . "'" );
+		}
 	}
 }

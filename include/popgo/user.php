@@ -55,10 +55,8 @@ class User {
 
 	    $this->user_data = null;
 	    if($sql_result) {
-		    while ( $userInfo = $sql_result->fetch_object() ) {
-			    $this->user_data = $userInfo;
-			    break;
-		    }
+		    $this->user_data = $sql_result->fetch_object();
+		    $sql_result->free_result();
 	    }
 
 	    $sql_result -> close();

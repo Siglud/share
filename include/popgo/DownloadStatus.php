@@ -47,6 +47,7 @@ class DownloadStatus {
 			return;
 		}
 		$this->download_data = $res->fetch_object();
+		$res->free_result();
 	}
 
 	/**

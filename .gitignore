@@ -1,2 +1,11 @@
 #PHPNow
 /.idea
+/cache/seed
+/cache/*.xml
+/torrent
+/avatar
+/forum
+/old
+/rss
+/sitemap
+/test
