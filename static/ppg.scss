@@ -28,6 +28,19 @@ a{
 .label{
     display: inline-block; padding: 0 4px; line-height: 22px; border-radius: 3px; background: #7A98E5; color: #FFF; font-weight: 400;
 }
+
+.pagelist{
+    margin: 20px 0; text-align: right;
+    a, strong{
+        display: inline-block; margin-left: 10px; padding: 0 10px; height: 28px; line-height: 28px;
+    }
+    a{
+        border: 1px solid #EBEBEB; text-decoration: none;
+    }
+    strong{
+        color: #FFF; border: 1px solid #08C; background: #08C;
+    }
+}
 // Topline
 .topline{
     padding: 7px 0; height: 20px; line-height: 20px; background: #F7F7F7; border-bottom: 1px solid #EBEBEB;
@@ -158,9 +171,9 @@ a{
             }
         }
     }
-    .list{
+    .section{
         h3{
-            padding-left: 20px; line-height: 34px; border-bottom: 1px solid #EBEBEB; background: #F7F7F7;
+            padding-left: 20px; line-height: 34px; border-bottom: 1px solid #EBEBEB; background: #F5F7F7;
             a{
                 margin-left: 20px; color: #08C; font-weight: 400;
             }
@@ -168,20 +181,67 @@ a{
     }
 }
 
-
-
-.seedingNum{
-    display: inline-block; width: 20px; height: 20px; overflow: hidden; text-indent: -9999px; background: url(img/ico.png) no-repeat 0 -20px;
-    background-size: 20px auto;
+.torrentOfCate{
+    margin-bottom: $gridSpacing; border: 1px solid #EBEBEB;
+    .hd{
+        height: 39px; line-height: 39px; border-bottom: 1px solid #EBEBEB; background: linear-gradient(#FFF, #F7F7F7);
+        h2{
+            float: left; margin-left: 20px;
+        }
+    }
 }
 
-.doneNum{
-    display: inline-block; width: 20px; height: 20px; overflow: hidden; text-indent: -9999px; background: url(img/ico.png) no-repeat 0 -40px;
-    background-size: 20px auto;
+.torrentList{
+    .item{
+        @include Clearfix;
+        padding: 10px 20px; border-top: 1px solid #EBEBEB;
+        &:first-child{
+            border-top: none;
+        }
+    }
+    // 标题
+    .title{
+        float: left; margin-bottom: 10px; max-width: 840px;
+        .top{
+            color: #C30;
+        }
+        .group{
+            color: #08C;
+        }
+    }
+    // 数据
+    .data{
+        float: right; font-size: 12px; color: #999;
+        span{
+            float: left; padding-left: 20px; width: 50px; height: 20px; line-height: 20px; background-image: url(img/ico.png); background-repeat: no-repeat; background-size: 20px auto;
+        }
+    }
+    .seedingNum{
+        background-position: 0 -20px;
+    }
+    .doneNum{
+        background-position: 0 -40px;
+    }
+    .downloadingNum{
+        background-position: 0 -60px;
+    }
+    // 信息
+    .meta{
+        position: relative; z-index: 1; clear: left; font-size: 12px; color: #999;
+        a{
+            color: #999;
+        }
+        .fileSize{
+            position: absolute; left: 276px;
+        }
+        .cate{
+            position: absolute; left: 365px;
+        }
+    }
+    .opt{
+        position: relative; z-index: 2; float: right; margin-top: -18px; width: 206px; font-size: 12px;
+        a{
+            color: #666;
+        }
+    }
 }
-
-.downNum{
-    display: inline-block; width: 20px; height: 20px; overflow: hidden; text-indent: -9999px; background: url(img/ico.png) no-repeat 0 -60px;
-    background-size: 20px auto;
-}
-
