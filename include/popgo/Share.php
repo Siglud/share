@@ -256,8 +256,8 @@ class Share {
 		return $this->share_data->hashCode;
 	}
 
-	public function get_magnet(){
-		return strtoupper($this::base32_encode(pack('H*', $this->get_hash_code())));
+	public function get_magnet_link(){
+		return 'magnet:?xt=urn:btih:' . strtoupper($this::base32_encode(pack('H*', $this->get_hash_code()))) . '&tr=http://t2.popgo.org:7456/annonce';
 	}
 
 	public static function base32_encode($inString){

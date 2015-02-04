@@ -58,8 +58,6 @@ class User {
 		    $this->user_data = $sql_result->fetch_object();
 		    $sql_result->free_result();
 	    }
-
-	    $sql_result -> close();
     }
 
     public function exists(){

@@ -1,7 +1,5 @@
 #PHPNow
 /.idea
-/cache/seed
-/cache/*.xml
 /torrent
 /avatar
 /forum
@@ -9,3 +7,5 @@
 /rss
 /sitemap
 /test
+/templates_c
+/cache

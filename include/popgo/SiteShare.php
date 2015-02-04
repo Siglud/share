@@ -52,7 +52,7 @@ class SiteShare {
 	 */
 	private function get_share_detail_from_sid_list($sid_list){
 		if($sid_list){
-			$sql = "SELECT a.addedtime, a.bhash, a.bname, a.filesize, t.seeders, t.leechers, a.userid, a.settop, a.ingroup, a.description, u.username, g.groupname, s.sortname, a.havezip, a.downtimes, a.changelog, a.fileslist, a.grouptop, a.id, a.emule FROM allowed_ex as a LEFT JOIN user as u ON a.userid=u.userid LEFT JOIN groups as g ON a.ingroup=g.groupid LEFT JOIN xbt_files as t ON a.bhash=t.info_hash LEFT JOIN sort as s ON a.sortid = s.sortid WHERE a.disabled != 1 AND a.id IN (" . implode(',', $sid_list) . ")";
+			$sql = "SELECT a.addedtime, a.bhash, a.bname, a.filesize, t.seeders, t.leechers, a.userid, a.settop, a.ingroup, a.description, u.username, g.groupname, s.sortname, a.havezip, a.downtimes, a.changelog, a.fileslist, a.grouptop, a.id, a.emule, a.hashCode FROM allowed_ex as a LEFT JOIN user as u ON a.userid=u.userid LEFT JOIN groups as g ON a.ingroup=g.groupid LEFT JOIN xbt_files as t ON a.bhash=t.info_hash LEFT JOIN sort as s ON a.sortid = s.sortid WHERE a.disabled != 1 AND a.id IN (" . implode(',', $sid_list) . ")";
 			$res = $this->dao->mysql()->query($sql);
 
 			$data = array();

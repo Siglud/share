@@ -49,6 +49,13 @@ class Group {
 	    }
     }
 
+	/**
+	 * @param $name
+	 * 通用的变量获取方法，只侦测group_data这个打包变量，如果它没有被初始化，那么从数据库中初始化，如果已经初始化了，则直接扔出，如果试图访问其他
+	 * 的变量——全部都是内部变量，则抛出错误
+	 * @return object|string
+	 * @throws Exception
+	 */
 	public function __get( $name ){
 		if($name == 'group_data') {
 			$this->init_from_database();
@@ -57,6 +64,9 @@ class Group {
 		throw new Exception('no found!');
 	}
 
+	/**
+	 * 从数据库中初始化全局的group_data变量包，其它的group值均从此变量包中取出，这个函数仅被__get('group_data')触发
+	 */
 	private function init_from_database(){
 		if(!$this->group_id){
 			$this->group_data = null;
@@ -70,7 +80,6 @@ class Group {
 			$this->group_data = $sql_result->fetch_object();
 			$sql_result->free_result();
 		}
-		$sql_result -> close();
 	}
 
 	public function getGroupData(){

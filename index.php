@@ -21,4 +21,12 @@ $page_data = array(
 	'anime_list' => $anime_list
 );
 
-template_require('main_body.phtml', $page_data);
+$smarty = new Smarty();
+
+$smarty->debugging = true;
+
+$smarty->caching = false;
+
+$smarty->assign($page_data);
+
+$smarty->display('main_body.tpl');
