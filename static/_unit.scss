@@ -1,0 +1,136 @@
+@charset "UTF-8";
+
+// ****** 
+// 自定义参数规范:
+// 
+// 1.尺寸默认单位为px，输入数字即可，如有%等其他单位需求，需额外定义单位
+// 2.除尺寸为数字外，其他参数为字符串格式，如'clip'、'img/a.jpg'
+// ******
+
+// ******
+// Reset
+// ******
+@mixin Reset{
+	body, div, dl, dt, dd, ul, ol, li, h1, h2, h3, h4, h5, h6, form, fieldset, input, button, textarea, p, blockquote, th, td {
+        margin: 0; padding: 0;
+    }
+	table {
+        border-collapse: collapse; border-spacing: 0;
+    }
+	fieldset, img {
+        border: 0;
+    }
+	caption, em, th {
+        font-style: normal; font-weight: normal;
+    }
+	ol, ul {
+        list-style: none;
+    }
+	caption, th {
+        text-align: left;
+    }
+	h1, h2, h3, h4, h5, h6 {
+        font-size: 100%; color: #333;
+    }
+	textarea {
+        overflow: auto; resize: none; font-family: arial; font-size: 12px;
+    }
+	input[type="submit"], input[type="reset"] {
+        text-align: center; cursor: pointer; filter: chroma(color=#000000); border: none;
+    }
+    input[type="text"], input[type="password"] {
+        font-family: arial; font-size: 12px;
+    }
+	// Hide the focus border in browsers with webkit
+	li, a, input, textarea, button {
+	    &:focus {
+            outline: none;
+        }
+	}
+    // fix HTML5 DTD image space BUG
+    img {
+        vertical-align: middle;
+    } 
+}
+
+// 链接颜色设置
+@mixin Link($linkColor, $visitedColor: $linkColor, $hoverColor: $linkColor, $activeColor: $linkColor){
+    &:link{
+        color : $linkColor; text-decoration:none;
+    }
+    &:visited{
+        color : $visitedColor;
+    }
+    &:hover{
+        color : $hoverColor;text-decoration: underline;
+    }
+    &:active{
+        color: $activeColor;
+    }
+}
+
+// ******
+// 排版
+// ******
+@mixin Vtext($height, $allowClip: noclip, $unit: px){
+    height : $height#{$unit}; line-height : $height#{$unit};
+    @if $allowClip == 'clip' {
+        overflow: hidden;
+    }
+}
+
+@mixin Cliptext($line-height, $numberOfLines: 1, $unit: px){
+    height : $line-height * $numberOfLines#{$unit}; line-height : $line-height#{$unit};  overflow: hidden;
+}
+
+@mixin Hidetext($bgimg, $position: 0 0){
+    text-indent: -9999px; overflow: hidden; background: url(#{$bgimg}) no-repeat $position;
+}
+
+// ******
+// Hack
+// ******
+
+// 清除浮动高
+@mixin Clearfix{
+    &:after{content:".";display:block;height:0;clear:both;visibility:hidden;};
+    *zoom:1
+}
+
+// ******
+// Javascript
+// ******
+@mixin Javascript{
+    .hide{display: none;}
+    .show{display: block;}
+}
+
+// Tabs 组件
+@mixin Tabs{
+    // TODO，新项目需要输出ui_tab的类名，防止JQ加载缓慢时的样式闪动。之后会把ui-tabs-nav里的设置全部移到ui_tab里，不依赖于JQ生成DOM挂钩
+    .ui_tab, .ui-tabs-nav{
+        @include Clearfix;
+        li, a{float: left;}
+        li{
+            margin-left: -1px; width: 95px; height: 36px; line-height: 36px; text-align: center; border-left: 1px solid #D9D9D9;
+            border-right: 1px solid #D9D9D9;
+            border-top: 1px solid #D9D9D9;background: #F8F8F8;
+            &.ui-tabs-active, &.ui-tabs-selected{
+                position: relative; font-weight: 700; background: #FFF;
+                a{
+                    position: absolute; left: 0; border-bottom: 1px solid #FFF;
+                }
+            }
+        }
+        a{
+            width: 100%;
+            &:hover{text-decoration: none;}
+        }
+    }
+    .ui-tabs-panel{
+        clear: both;
+    }
+    .ui-tabs-hide{
+        display: none;
+    }
+}
