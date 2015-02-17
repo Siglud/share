@@ -39,13 +39,19 @@ class Share {
 	 * @param int $sid
 	 * @param object $share_data
 	 */
-	public function __construct($sid=null, $share_data=null){
+	public function __construct($sid=null, $share_data=null, $share_hash=null){
 		if($sid){
 			$this->sid = (int) $sid;
 		}
 		if($share_data){
 			$this->sid = (int) $share_data->id;
 			$this->share_data = $share_data;
+		}
+		if($share_hash){
+			if(preg_match('/^[0-9a-fA-F]{40}$/', $share_hash)){
+				$this->sid = null;
+				$this->hashCode = $share_hash;
+			}
 		}
 
 		$this->dao = Data_access::get_instance();
@@ -62,17 +68,26 @@ class Share {
 
 	// ** 从数据库中初始化一个share的相关信息 **//
 	private function init_from_database(){
-		if(!$this->sid){
+		if(!$this->sid and !$this->hashCode){
 			$this->share_data = null;
 			return;
 		}
 
-		$sql = "SELECT emule, userid, bname, filename, sortid, addedtime, filesize, settop, ingroup, description, files, fileslist, havezip, ip, changelog, downtimes, disabled, grouptop, hashCode FROM allowed_ex WHERE id = '$this->sid'";
+		if($this->sid){
+			$query_string = "id = '$this->sid'";
+		}else{
+			$query_string = "hashCode = '$this->hashCode'";
+		}
+
+		$sql = "SELECT id, emule, userid, bname, filename, sortid, addedtime, filesize, settop, ingroup, description, files, fileslist, havezip, ip, changelog, downtimes, disabled, grouptop, hashCode FROM allowed_ex WHERE $query_string";
 
 		$sql_res = $this->dao->mysql()->query($sql);
 
 		if($sql_res){
 			$this->share_data = $sql_res->fetch_object();
+			if(!$this->sid) {
+				$this->sid = $this->share_data->id;
+			}
 			$sql_res->free_result();
 		}else{
 			$this->share_data = null;
@@ -256,6 +271,13 @@ class Share {
 		return $this->share_data->hashCode;
 	}
 
+	public function get_detail_link(){
+		return 'program-'.$this->get_hash_code().'-'.$this->get_share_name()->get_url_encode_text().'.html';
+	}
+
+	/*
+	 * 获取种子的磁力链接
+	 * */
 	public function get_magnet_link(){
 		return 'magnet:?xt=urn:btih:' . strtoupper($this::base32_encode(pack('H*', $this->get_hash_code()))) . '&tr=http://t2.popgo.org:7456/annonce';
 	}

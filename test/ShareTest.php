@@ -15,7 +15,7 @@ class ShareTest extends \PHPUnit_Framework_TestCase {
 	public function test_share_read(){
 		$share = new Share(19);
 
-		$this->assertNotEmpty($share->get_magnet());
+		$this->assertNotEmpty($share->get_magnet_link());
 		$this->assertFalse($share->disabled());
 		$this->assertTrue($share->exists());
 		$this->assertEquals($share->get_add_time()->get_unix_time(), 1267373580);
@@ -47,7 +47,7 @@ class ShareTest extends \PHPUnit_Framework_TestCase {
 
 		$share = new Share(null, $data);
 
-		$this->assertNotEmpty($share->get_magnet());
+		$this->assertNotEmpty($share->get_magnet_link());
 		$this->assertFalse($share->disabled());
 		$this->assertTrue($share->exists());
 		$this->assertEquals($share->get_add_time()->get_unix_time(), 1267373580);
@@ -63,6 +63,27 @@ class ShareTest extends \PHPUnit_Framework_TestCase {
 		$this->assertEquals($share->get_group()->getGroupId(), 1);
 		$this->assertEquals($share->get_share_name()->get_orig_text(), '[漫游字幕组] Fullmetal Alchemist 钢之炼金术师 2009 第46话 RMVB');
 		$this->assertEquals($share->get_user()->getUserId(), 16);
+
+		// 测试从hash中初始化
+		$share = new Share(null, null, 'e6ae5ea8acca8a0e8aee8b75973fb9d9129d23eb');
+
+		$this->assertNotEmpty($share->get_magnet_link());
+		$this->assertFalse($share->disabled());
+		$this->assertTrue($share->exists());
+		$this->assertEquals($share->get_add_time()->get_unix_time(), 1267373580);
+		$this->assertEquals($share->get_hash_code(), 'e6ae5ea8acca8a0e8aee8b75973fb9d9129d23eb');
+		$this->assertEquals($share->get_category()->get_category_id(), 1);
+		$this->assertNotEmpty($share->get_change_log()->get_orig_text());
+		$this->assertNotEmpty($share->get_description());
+		$this->assertEquals($share->get_download_times(), 418);
+		$this->assertNotEmpty($share->get_emule_link());
+		$this->assertNotEmpty($share->get_file_list());
+		$this->assertEquals($share->get_file_size(), '110.23 MB');
+		$this->assertEquals($share->get_is_group_top(), 0);
+		$this->assertEquals($share->get_group()->getGroupId(), 1);
+		$this->assertEquals($share->get_share_name()->get_orig_text(), '[漫游字幕组] Fullmetal Alchemist 钢之炼金术师 2009 第46话 RMVB');
+		$this->assertEquals($share->get_user()->getUserId(), 16);
+		$this->assertEquals($share->get_detail_link(), 'program-e6ae5ea8acca8a0e8aee8b75973fb9d9129d23eb-'.urlencode('[漫游字幕组] Fullmetal Alchemist 钢之炼金术师 2009 第46话 RMVB').'.html');
 
 		$share = new Share();
 		$this->assertFalse($share->exists());
