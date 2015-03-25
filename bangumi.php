@@ -10,9 +10,12 @@ require_once('site-load.php');
 
 $bangumi_list = \popgo\Bangumi::get_now_playing();
 
+$header = new \popgo\PopgoSEO();
+
 $page_data = array(
 	'header' => $header,
-	'anime_list' => $anime_list
+	'bangumi_list' => $bangumi_list,
+	'today' => jddayofweek(unixtojd(time()))
 );
 
 $smarty = new Smarty();
@@ -23,4 +26,4 @@ $smarty->caching = false;
 
 $smarty->assign($page_data);
 
-$smarty->display('main_body.tpl');
+$smarty->display('bangumi.tpl');

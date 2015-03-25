@@ -21,3 +21,6 @@ define('SITE_CLOSE', false);
 
 // ** 设置上传种子的路径 ** //
 define('TORRENTS_FILE_PATH', '/torrents/');
+
+// ** 默认时区设置 ** //
+date_default_timezone_set('Asia/Chongqing');

@@ -25,7 +25,8 @@ class Bangumi {
 	/**
 	 * @param int $bid
 	 * @param object $bangumi_data
-	 * 注意这个初始化有一个坑，当$bid为0或者空变量的时候，不会被正确的初始化，那么exists会报告500错误
+	 * 注意这个初始化有一个坑，当$bid为0或者空变量的时候，不会被正确的初始化，那么exists会报告500错误，解决它最简单的办法就是——不要设置任何为0的
+	 * bid
 	 */
 	public function __construct($bid=null, $bangumi_data=null){
 		if($bid){
@@ -139,6 +140,29 @@ class Bangumi {
 		return $this->play_time;
 	}
 
+	/*
+	 * 番组的具体时间
+	 * */
+	function get_play_time_word($play_time){
+		switch ($play_time){
+			case 0:
+				return _('Sunday');
+			case 1:
+				return _('Monday');
+			case 2:
+				return _('Tuesday');
+			case 3:
+				return _('Wednesday');
+			case 4:
+				return _('Thursday');
+			case 5:
+				return _('Friday');
+			case 6:
+				return _('Saturday');
+		}
+		return '';
+	}
+
 	/*获取搜索番组的url链接
 	 * */
 	function get_search_url(){
@@ -153,12 +177,27 @@ class Bangumi {
 	 * */
 	public static function get_now_playing(){
 		$now = time();
-		$sql = "SELECT id, title, start_time, end_time, website, image, search_name, play_time FROM bangumi WHERE start_time < $now AND (end_time > $now OR end_time = 0)";
-		$sql_res = Data_access::get_instance()->mysql()->query($sql);
+		// 快取
+		$cache_data = Data_access::get_instance()->memcache()->get('bangumi');
+		$bangumi_data = null;
+		if($cache_data){
+			$bangumi_data = json_decode($cache_data);
+		}else {
+			$sql = "SELECT id, title, start_time, end_time, website, image, search_name, play_time FROM bangumi WHERE start_time < $now AND (end_time > $now OR end_time = 0)";
+			$bangumi_data = Data_access::get_instance()->mysql()->query( $sql );
+
+			$data_packet = array();
+			foreach($bangumi_data as $x){
+				array_push($data_packet, $x);
+			}
+			Data_access::get_instance()->memcache()->set('bangumi', json_encode($data_packet), false, 86400);
+		}
 
 		$res = array();
-		if($sql_res){
-			foreach($sql_res as $v){
+		if($bangumi_data){
+			foreach($bangumi_data as $v){
+				# 为了兼容json dumps之后的数据，做一下强制类型转换
+				$v = (object) $v;
 				if(!array_key_exists($v->play_time, $res)){
 					$res[$v->play_time] = array();
 				}

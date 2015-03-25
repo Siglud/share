@@ -5,7 +5,6 @@
  * Date: 13-10-19
  * Time: 下午4:42
  * To change this template use File | Settings | File Templates.
- * @var $global_config \config\config
  */
 
 require_once('site-load.php');
@@ -25,7 +24,7 @@ $smarty = new Smarty();
 
 $smarty->debugging = true;
 
-$smarty->caching = false;
+$smarty->caching = Smarty::CACHING_LIFETIME_SAVED;
 
 $smarty->assign($page_data);
 
