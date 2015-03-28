@@ -9,8 +9,6 @@
 namespace popgo;
 
 
-use SebastianBergmann\Exporter\Exception;
-
 class Bangumi {
 	private $dao;
 
@@ -48,7 +46,7 @@ class Bangumi {
 			$this->init_from_database();
 			return $this->bangumi_data;
 		}
-		throw new Exception('attrib '. $name .' no found!');
+		throw new \Exception('attrib '. $name .' no found!');
 	}
 
 	private function init_from_database(){
