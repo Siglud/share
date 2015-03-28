@@ -26,8 +26,6 @@ class Share {
 
 	private $add_time;
 
-	private $file_size;
-
 	private $group;
 
 	private $description;
@@ -35,10 +33,12 @@ class Share {
 	private $file_list;
 
 	private $change_log;
-	/**
-	 * @param int $sid
-	 * @param object $share_data
-	 */
+
+    /**
+     * @param int $sid
+     * @param object $share_data
+     * @param null $share_hash
+     */
 	public function __construct($sid=null, $share_data=null, $share_hash=null){
 		if($sid){
 			$this->sid = (int) $sid;
@@ -340,4 +340,27 @@ class Share {
 
 		return $outString;
 	}
+
+    /**
+     * 检查分享名称是否能够使用
+     * @param $name
+     * @return bool
+     */
+    public function check_same_share_name($name){
+        $res = $this->dao->mysql()->query("SELECT id FROM allowed_ex WHERE bname = ' { $this->dao->mysql()->escape_string($name) } '");
+        if($res->field_count){
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    public function check_same_hash_code($hash_code){
+        $res = $this->dao->mysql()->query(" SELECT id FROM allowed_ex WHERE hashCode = ' { $this->dao->mysql()->escape_string($hash_code) }' ");
+    }
+
+    public static function add_new($user_id, $share_name, $file_name, $category_id, $file_size, $group_id, $description, $files_count, $file_list, $have_zip, $ip, $hash_code){
+
+        $sql = 'SELECT id, emule, userid, bname, filename, sortid, addedtime, filesize, settop, ingroup, description, files, fileslist, havezip, ip, changelog, downtimes, disabled, grouptop, hashCode FROM allowed_ex';
+    }
 }

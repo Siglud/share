@@ -10,6 +10,7 @@ use Exception;
  * Date: 13-10-19
  * Time: 下午10:39
  * 用户基础类
+ * 可用id进行惰性初始化，也可以传入初始化完成之后的user data字段进行初始化
  */
 
 class User {
@@ -24,7 +25,7 @@ class User {
 	 * @param string $user_id
 	 * @param object $user_data
 	 */
-	function __construct($user_id="", $user_data="")
+	function __construct($user_id="", $user_data=null)
     {
 	    $this->dao = Data_access::get_instance();
 
@@ -45,6 +46,9 @@ class User {
 		throw new Exception('no found!');
 	}
 
+    /**
+     * 从数据库中初始化一个用户
+     */
     private function init_from_database(){
 	    if(!$this->user_id){
 		    $this->user_data = null;
@@ -60,11 +64,16 @@ class User {
 	    }
     }
 
+    /**
+     * 获取用户是否存在
+     * @return bool
+     */
     public function exists(){
         return $this->user_id AND $this->user_data;
     }
 
     /**
+     * 获取用户是否被屏蔽
      * @return mixed
      */
     public function getDisabled(){
@@ -72,6 +81,7 @@ class User {
     }
 
     /**
+     * 获取用户是否是高级用户
      * @return mixed
      */
     public function getIsAdvUser(){
@@ -79,6 +89,7 @@ class User {
     }
 
     /**
+     * 获取用户的id
      * @return mixed
      */
     public function getUserId(){
@@ -87,6 +98,7 @@ class User {
 
 
     /**
+     * 获取用户的邮箱
      * @return mixed
      */
     public function getUserMail(){
@@ -94,6 +106,7 @@ class User {
     }
 
     /**
+     * 获取用户名
      * @return PopgoText
      */
     public function getUserName(){
@@ -104,6 +117,7 @@ class User {
     }
 
 	/**
+     * 获取用户的上传总数量
 	 * @return int
 	 */
 	public function getUploadCount(){
@@ -111,11 +125,16 @@ class User {
 	}
 
 	/**
+     * 返回用户所属的组
 	 * @return Group
 	 */
 	public function getGroup(){
 		if(!$this->group){
-			$this->group = new Group($this->user_data->groupid);
+            $groups = explode(',', $this->user_data->groupid);
+            $this->group = array();
+            foreach($groups as $group){
+                array_push($this->group, new Group($group));
+            }
 		}
 		return $this->group;
 	}

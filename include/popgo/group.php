@@ -37,7 +37,7 @@ class Group {
 	 * @param int $group_id
 	 * @param object $group_data
 	 */
-	function __construct($group_id='', $group_data='')
+	function __construct($group_id=null, $group_data=null)
     {
 	    $this->data_access = Data_access::get_instance();
         if($group_id){
@@ -82,12 +82,17 @@ class Group {
 		}
 	}
 
-	public function getGroupData(){
+    /**
+     * 获取组的全部数据
+     * @return null|object
+     */
+    public function getGroupData(){
 		return $this->group_data;
 	}
 
     /**
-     * @return mixed
+     * 获取组的id
+     * @return int
      */
     public function getGroupId()
     {
@@ -96,14 +101,16 @@ class Group {
 
 
     /**
-     * @return string
+     * 获取发布组的介绍文字
+     * @return PopgoText
      */
     public function getGroupIntro()
     {
-        return $this->group_data->intro;
+        return new PopgoText($this->group_data->intro);
     }
 
     /**
+     * 获取组的组长
      * @return mixed
      */
     public function getGroupLeader()
@@ -112,6 +119,7 @@ class Group {
     }
 
     /**
+     * 获取组的名字
      * @return mixed
      */
     public function getGroupName()
@@ -120,6 +128,7 @@ class Group {
     }
 
 	/**
+     * 获取组被添加的时间
 	 * @return int
 	 */
 	public function getGroupAddTime() {
@@ -127,6 +136,7 @@ class Group {
 	}
 
 	/**
+     * 确定组是否被屏蔽
 	 * @return mixed
 	 */
 	public function getGroupIsDisable() {
@@ -134,6 +144,7 @@ class Group {
 	}
 
 	/**
+     * 获取发布组的权值
 	 * @return mixed
 	 */
 	public function getGroupRight() {
@@ -141,6 +152,7 @@ class Group {
 	}
 
 	/**
+     * 获取发布组的url
 	 * @return mixed
 	 */
 	public function getGroupUrl() {
@@ -149,9 +161,108 @@ class Group {
 
 
 	/**
+     * 判断组是否存在
 	 * @return bool
 	 */
 	public function exists(){
 		return !!$this->getGroupData() AND !$this->getGroupIsDisable();
 	}
+
+    /**
+     * 新建组
+     * @param $group_name
+     * @param string $intro
+     * @param int $group_right
+     * @param string $url
+     * @return bool
+     */
+    public function add_new($group_name, $intro='', $group_right=0, $url=''){
+        if($group_name){
+            if(!$group_right or $group_right != (int) $group_right){
+                $group_right = 0;
+            }
+            if($this->check_same_group_name($group_name)){
+                return false;
+            }
+
+            $this->data_access->mysql()->query("INSERT INTO groups (groupname, disabled, `right`, url, intro, addtime) VALUES (' $this->data_access->mysql()->escape_string($group_name) ', 0, ' $group_right ', ' $this->data_access->mysql()->escape_string($url) ', ' $this->data_access->mysql()->escape_string($intro) ', time()");
+            $this->data_access->mysql()->commit();
+            $this->clear_cache();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 编辑发布组
+     * @param $group_id int
+     * @param $group_name string
+     * @param $intro string
+     * @param $group_right string
+     * @param $url string
+     * @param $disabled bool
+     * @return bool
+     */
+    public function edit($group_id, $group_name, $intro, $group_right, $url, $disabled){
+        $group_id = (int) $group_id;
+        if($group_id and $group_name and $group_right){
+            if($this->check_same_group_name($group_name)){
+                return false;
+            }
+            $disabled = $disabled ? 1 : 0;
+            $this->data_access->mysql()->query("UPDATE groups SET groupname = ' $this->data_access->mysql()->escape_string($group_name)  ', intro = ' $this->data_access->mysql()->escape_string($intro) ', `right` = ' $this->data_access->mysql()->escape_string($group_right) ', url=' $this->data_access->mysql()->escape_string($url) ', `disabled`=' $this->data_access->mysql()->escape_string($disabled) ' WHERE groupid = ' $this->data_access->mysql()->escape_string($disabled) '");
+            $this->data_access->mysql()->commit();
+            $this->clear_cache();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 获取全部的发布组列表
+     * @return array(Group)
+     */
+    public static function get_all_group_list(){
+        // 首先检查cache的内容
+        $data_packet = Data_access::get_instance()->memcache()->get('group_all');
+        if(!$data_packet){
+            $group_data = Data_access::get_instance()->mysql()->query("SELECT groupid, groupname, intro, `right`, url, addtime, `disabled`  FROM groups ORDER BY `right` DESC");
+            $data_packet = array();
+            foreach($group_data as $x){
+                array_push($data_packet, $x);
+            }
+            // 存入memcache
+            Data_access::get_instance()->memcache()->set('group_all', json_encode($data_packet), false, 286400);
+        }
+
+        $res = array();
+        if($data_packet){
+            foreach($data_packet as $v){
+                # 为了兼容json dumps之后的数据，做一下强制类型转换
+                $v = (object) $v;
+                array_push($res, new Group(null, $v));
+            }
+        }
+        return $res;
+    }
+
+    /**
+     * 检查是否有重复的组名，True=有重复
+     * @param $name
+     * @return bool
+     */
+    public function check_same_group_name($name){
+        $same_name_res = $this->data_access->mysql()->query(" SELECT groupid FROM groups WHERE groupname = ' $this->data_access->mysql()->escape_string($name) '");
+        if($same_name_res->field_count){
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 清空缓存
+     */
+    private function clear_cache(){
+        $this->data_access->memcache()->delete('group_all');
+    }
 }

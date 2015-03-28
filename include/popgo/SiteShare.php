@@ -18,10 +18,11 @@ class SiteShare {
 		$this->dao = Data_access::get_instance();
 	}
 
-	/**
-	 * @param $category int
-	 * @param $number int
-	 */
+    /**
+     * @param $category int
+     * @param $number int
+     * @return array|null
+     */
 	public function get_recent_category_share($category, $number){
 		$category = (int) $category;
 		$number = (int) $number;
