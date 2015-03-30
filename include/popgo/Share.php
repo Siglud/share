@@ -4,12 +4,14 @@
  * User: Rince
  * Date: 2014/12/13
  * Time: 16:13
+ * 分享内容主类
+ * 这个类对应的数据库使用了纵向切表，切出了一个易变字段和三个长的Text字段，以期减少表的大小加快日常排序中的速度
+ * 缓存使用了memcache对字段进行缓存，时间为1天，也可以由Memcache自身控制进行LRU
+ * 唯一需要注意的是Group，因为新增了一个分享能过对应两个Group的功能，所以Group将切出另外做处理，不会再使用连表查询的方式进行
  */
 
 namespace popgo;
 
-
-use Exception;
 
 class Share {
 	private $sid;
@@ -26,15 +28,15 @@ class Share {
 
 	private $add_time;
 
-	private $group;
+	private $group_publish;
 
 	private $description;
 
 	private $file_list;
 
-	private $change_log;
+	private $share_data;
 
-    /**
+	/**
      * @param int $sid
      * @param object $share_data
      * @param null $share_hash
@@ -44,7 +46,7 @@ class Share {
 			$this->sid = (int) $sid;
 		}
 		if($share_data){
-			$this->sid = (int) $share_data->id;
+			$this->sid = (int) $share_data->sid;
 			$this->share_data = $share_data;
 		}
 		if($share_hash){
@@ -60,38 +62,53 @@ class Share {
 	// ** 用于share_data的惰性初始化，当试图访问未被初始化的share_data的时候自动调用此函数，此函数负责从数据库中初始化share_data，对于其他访问请求均直接抛出异常 ** //
 	public function __get($name){
 		if($name == 'share_data'){
-			$this->init_from_database();
+			$this->init_base_info_from_database();
 			return $this->share_data;
 		}
-		throw new Exception('no found!');
+		throw new \Exception('no found!');
 	}
 
-	// ** 从数据库中初始化一个share的相关信息 **//
-	private function init_from_database(){
+	// ** 从数据库中初始化一个share的基础信息 **//
+	private function init_base_info_from_database(){
 		if(!$this->sid and !$this->hashCode){
 			$this->share_data = null;
 			return;
 		}
-
-		if($this->sid){
-			$query_string = "id = '$this->sid'";
-		}else{
-			$query_string = "hashCode = '$this->hashCode'";
-		}
-
-		$sql = "SELECT id, emule, userid, bname, filename, sortid, addedtime, filesize, settop, ingroup, description, files, fileslist, havezip, ip, changelog, downtimes, disabled, grouptop, hashCode FROM allowed_ex WHERE $query_string";
-
-		$sql_res = $this->dao->mysql()->query($sql);
-
-		if($sql_res){
-			$this->share_data = $sql_res->fetch_object();
-			if(!$this->sid) {
-				$this->sid = $this->share_data->id;
+		if($this->hashCode) {
+			$sid = Share::hash_code_to_sid( $this->hashCode );
+			if(!$sid){
+				$this->share_data = null;
+				return;
 			}
-			$sql_res->free_result();
-		}else{
-			$this->share_data = null;
+			$this->sid = $sid;
 		}
+
+		// memcache get
+		$mem_cache = $this->dao->memcache()->get('share:' . $this->sid);
+		if(!$mem_cache) {
+			$sql = "SELECT b.sid, user_id, share_name, category_id, add_time, hash_code, global_top, group_top, group_publish, file_name, file_size, file_count, have_zip, upload_ip, deleted, e.description, e.download_count, e.emule_link, e.file_list FROM share_basic b LEFT JOIN share_extend e ON b.sid = e.sid WHERE b.sid = '$this->sid'";
+
+			$sql_res = $this->dao->mysql()->query( $sql );
+
+			if ( $sql_res ) {
+				$this->share_data = $sql_res->fetch_object();
+				$sql_res->free_result();
+				# 存入memcache
+				$this->dao->memcache()->set('share:' .$this->sid, json_encode($this->share_data), null, 86400);
+			}else {
+				$this->share_data = null;
+			}
+		}else {
+			$this->share_data = (object) json_decode( $mem_cache );
+		}
+	}
+
+	/**
+	 * 是否被删除了
+	 * @return bool
+	 */
+	public function is_deleted(){
+		return !!$this->share_data->deleted;
 	}
 
 	// ** 确定一个分享是否存在 ** //
@@ -104,7 +121,7 @@ class Share {
 	 * @return mixed
 	 */
 	public function get_emule_link(){
-		return $this->share_data->emule;
+		return $this->share_data->emule_link;
 	}
 
 	/**
@@ -113,7 +130,7 @@ class Share {
 	 */
 	public function get_user(){
 		if(!$this->user){
-			$this->user = new User($this->share_data->userid);
+			$this->user = new User($this->share_data->user_id);
 		}
 		return $this->user;
 	}
@@ -124,7 +141,7 @@ class Share {
 	 */
 	public function get_share_name(){
 		if(!$this->share_name){
-			$this->share_name = new PopgoText($this->share_data->bname);
+			$this->share_name = new PopgoText($this->share_data->share_name);
 		}
 		return $this->share_name;
 	}
@@ -135,7 +152,7 @@ class Share {
 	 */
 	public function get_torrent_file_name(){
 		if(!$this->torrent_file_name){
-			$this->torrent_file_name = new PopgoText($this->share_data->filename);
+			$this->torrent_file_name = new PopgoText($this->share_data->file_name);
 		}
 		return $this->torrent_file_name;
 	}
@@ -146,7 +163,7 @@ class Share {
 	 */
 	public function get_category(){
 		if(!$this->category){
-			$this->category = new Category($this->share_data->sortid);
+			$this->category = new Category($this->share_data->category_id);
 		}
 		return $this->category;
 	}
@@ -157,7 +174,7 @@ class Share {
 	 */
 	public function get_add_time(){
 		if(!$this->add_time){
-			$this->add_time = new PopgoTime($this->share_data->addedtime);
+			$this->add_time = new PopgoTime($this->share_data->add_time);
 		}
 		return $this->add_time;
 	}
@@ -167,7 +184,7 @@ class Share {
 	 * @return PopgoFileSize
 	 */
 	public function get_file_size(){
-		return $this->share_data->filesize;
+		return $this->share_data->file_size;
 	}
 
 	/**
@@ -175,18 +192,18 @@ class Share {
 	 * @return bool
 	 */
 	public function get_is_top(){
-		return !!$this->share_data->settop;
+		return !!$this->share_data->global_top;
 	}
 
 	/**
 	 * 获得所在的组的信息
-	 * @return Group
+	 * @return bool
 	 */
-	public function get_group(){
-		if(!$this->group){
-			$this->group = new Group($this->share_data->ingroup);
+	public function is_group_publish(){
+		if(!$this->group_publish){
+			$this->group_publish = !! $this->share_data->group_publish;
 		}
-		return $this->group;
+		return $this->group_publish;
 	}
 
 	/**
@@ -206,7 +223,7 @@ class Share {
 	 */
 	public function get_file_list(){
 		if(!$this->file_list){
-			$this->file_list = new PopgoText($this->share_data->fileslist);
+			$this->file_list = new PopgoText($this->share_data->file_list);
 		}
 		return $this->file_list;
 	}
@@ -216,7 +233,7 @@ class Share {
 	 * @return bool
 	 */
 	public function is_have_zip(){
-		return !!$this->share_data->havezip;
+		return !!$this->share_data->have_zip;
 	}
 
 
@@ -225,18 +242,7 @@ class Share {
 	 * @return mixed
 	 */
 	public function get_upload_ip(){
-		return $this->share_data->ip;
-	}
-
-	/**
-	 * 获取文件改动的信息
-	 * @return PopgoText
-	 */
-	public function get_change_log(){
-		if(!$this->change_log){
-			$this->change_log = new PopgoText($this->share_data->changelog);
-		}
-		return $this->change_log;
+		return $this->share_data->upload_ip;
 	}
 
 	/**
@@ -244,15 +250,7 @@ class Share {
 	 * @return int
 	 */
 	public function get_download_times(){
-		return $this->share_data->downtimes;
-	}
-
-	/**
-	 * 文件是否已经被打上了删除标记
-	 * @return bool
-	 */
-	public function disabled(){
-		return !!$this->share_data->disabled;
+		return $this->share_data->download_count;
 	}
 
 	/**
@@ -260,7 +258,7 @@ class Share {
 	 * @return bool
 	 */
 	public function get_is_group_top(){
-		return !!$this->share_data->grouptop;
+		return !!$this->share_data->group_top;
 	}
 
 	/**
@@ -268,7 +266,7 @@ class Share {
 	 * @return mixed
 	 */
 	public function get_hash_code(){
-		return $this->share_data->hashCode;
+		return $this->share_data->hash_code;
 	}
 
 	public function get_detail_link(){
@@ -341,26 +339,67 @@ class Share {
 		return $outString;
 	}
 
+	/**
+	 * 检查hash是否正确，基础检查
+	 * @param $hash
+	 *
+	 * @return bool
+	 */
+	private static function check_hash_code($hash){
+		if(strlen($hash) != 40 or !preg_match('/^[a-fA-F0-9]+$/', $hash)){
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * 从hash转为sid
+	 * @param $hash
+	 *
+	 * @return int|null
+	 */
+	public static function hash_code_to_sid($hash){
+		if(!Share::check_hash_code($hash)){
+			return null;
+		}
+		$hash = Data_access::get_instance()->mysql()->escape_string($hash);
+
+		$res = Data_access::get_instance()->mysql()->query("SELECT sid FROM share_basic WHERE hash_code = '$hash'");
+
+		if($res){
+			$sid = $res->fetch_object()->sid;
+			$res->free_result();
+		}else{
+			$sid = null;
+		}
+		return $sid;
+	}
+
     /**
      * 检查分享名称是否能够使用
      * @param $name
      * @return bool
      */
     public function check_same_share_name($name){
-        $res = $this->dao->mysql()->query("SELECT id FROM allowed_ex WHERE bname = ' { $this->dao->mysql()->escape_string($name) } '");
-        if($res->field_count){
-            return true;
-        }else{
-            return false;
-        }
+        $res = $this->dao->mysql()->query("SELECT sid FROM share_basic WHERE share_name = '{ $this->dao->mysql()->escape_string($name) }'");
+        return $res->field_count ? true : false;
     }
 
-    public function check_same_hash_code($hash_code){
-        $res = $this->dao->mysql()->query(" SELECT id FROM allowed_ex WHERE hashCode = ' { $this->dao->mysql()->escape_string($hash_code) }' ");
+	/**
+	 * 检查是否有同样的hash存在
+	 * @param $hash_code
+	 *
+	 * @return bool
+	 */
+	public function check_same_hash_code($hash_code){
+        $res = $this->dao->mysql()->query(" SELECT sid FROM share_basic WHERE hash_code = '{ $this->dao->mysql()->escape_string($hash_code) }' ");
+	    return $res->field_count ? true : false;
     }
 
-    public static function add_new($user_id, $share_name, $file_name, $category_id, $file_size, $group_id, $description, $files_count, $file_list, $have_zip, $ip, $hash_code){
-
-        $sql = 'SELECT id, emule, userid, bname, filename, sortid, addedtime, filesize, settop, ingroup, description, files, fileslist, havezip, ip, changelog, downtimes, disabled, grouptop, hashCode FROM allowed_ex';
-    }
+    /*public static function add_new($user_id, $share_name, $file_name, $category_id, $file_size, $group_id, $description, $files_count, $file_list, $have_zip, $ip, $hash_code){
+	    $user = new User($user_id);
+	    if(!$user->exists()){
+		    throw new \Exception();
+	    }
+    }*/
 }

@@ -53,7 +53,7 @@ class Category {
 		if(!$this->cid){
 			$this->category_data = null;
 		}else{
-			$sql = "SELECT sortid, sortname, `right` FROM sort WHERE sortid = '$this->cid'";
+			$sql = "SELECT category_id, category_name, category_weight FROM category WHERE category_id = '$this->cid'";
 
 			$sql_res = $this->dao->mysql()->query($sql);
 
@@ -72,7 +72,7 @@ class Category {
 	 */
 	public function get_category_name() {
 		if(!$this->sort_name){
-			$this->sort_name = new PopgoText($this->category_data->sortname);
+			$this->sort_name = new PopgoText($this->category_data->category_name);
 		}
 		return $this->sort_name;
 	}
@@ -82,7 +82,7 @@ class Category {
 	 * @return mixed
 	 */
 	public function get_category_right() {
-		return $this->category_data->right;
+		return $this->category_data->category_weight;
 	}
 
     /**
@@ -103,13 +103,15 @@ class Category {
 
     /**
      * 增加一个新的分类
-     * @param $sort_name
-     * @param $sort_right
-     * @return mixed|null
+     *
+*@param $category_name
+     * @param $category_weight
+     *
+*@return mixed|null
      */
-    public function add_new($sort_name, $sort_right){
-		if($sort_name AND $sort_right AND (int) $sort_right == $sort_right){
-			$this->dao->mysql()->query("INSERT INTO sort (sortname, `right`) VALUES ('". $this->dao->mysql()->escape_string($sort_name) ."', $sort_right)");
+    public function add_new( $category_name, $category_weight){
+	    if ( $category_name AND $category_weight AND (int) $category_weight == $category_weight){
+			$this->dao->mysql()->query("INSERT INTO category (category_name, category_weight) VALUES ('". $this->dao->mysql()->escape_string( $category_name) ."', $category_weight)");
             // 删除快取，让前端自主刷新
             $this->clear_category_cache();
 			return $new_id = $this->dao->mysql()->insert_id;
@@ -119,13 +121,14 @@ class Category {
 
     /**
      * 编辑一个现有的分类值
-     * @param $sort_id
-     * @param $sort_name
-     * @param $sort_right
+     *
+*@param $category_id
+     * @param $category_name
+     * @param $category_weight
      */
-    public function edit($sort_id, $sort_name, $sort_right){
-		if($sort_id AND $sort_name AND $sort_right AND (int) $sort_right == $sort_right AND (int) $sort_id == $sort_id){
-			$this->dao->mysql()->query( "UPDATE sort SET sortname = '" . $this->dao->mysql()->escape_string( $sort_name ) . "', `right`=' $this->dao->mysql()->escape_string( $sort_right ) ' WHERE sortid = ' $this->dao->mysql()->escape_string( $sort_id ) '" );
+    public function edit( $category_id, $category_name, $category_weight){
+		if ( $category_id AND $category_name AND $category_weight AND (int) $category_weight == $category_weight AND (int) $category_id == $category_id){
+			$this->dao->mysql()->query( "UPDATE category SET category_name = ' $this->dao->mysql()->escape_string( $category_name ) ', category_weight=' $this->dao->mysql()->escape_string( $category_weight ) ' WHERE category_id = ' $this->dao->mysql()->escape_string( $category_id ) '" );
             $this->clear_category_cache();
 		}
 	}
@@ -138,7 +141,7 @@ class Category {
         // 先从memcache中进行快取
         $data_packet = Data_access::get_instance()->memcache()->get('cg_all');
         if(!$data_packet){
-            $all_category = Data_access::get_instance()->mysql()->query("SELECT sortid, sortname, `right` FROM sort ORDER BY `right` DESC");
+            $all_category = Data_access::get_instance()->mysql()->query("SELECT category_id, category_name, category_weight FROM category ORDER BY category_weight DESC");
             $data_packet = array();
             foreach($all_category as $x){
                 array_push($data_packet, $x);

@@ -44,7 +44,7 @@ class Group {
             $this->group_id = (int) $group_id;
         }
 	    if($group_data){
-		    $this->group_id = (int) $group_data->groupid;
+		    $this->group_id = (int) $group_data->group_id;
 		    $this->group_data = $group_data;
 	    }
     }
@@ -72,12 +72,20 @@ class Group {
 			$this->group_data = null;
 			return;
 		}
+		// Memcache快取
+		$cache_result = $this->data_access->memcache()->get('group:'. $this->group_id);
+		if($cache_result){
+			$this->group_data = (object) json_decode($cache_result);
+			return;
+		}
 		// SQL操作
-		$sql_result = $this->data_access->mysql()->query("SELECT groupid, groupname, groupleader, intro, `right`, url, addtime, `disabled`  FROM groups WHERE groupid = '". $this->group_id ."'");
+		$sql_result = $this->data_access->mysql()->query("SELECT group_id, group_name, group_intro, group_weight, group_url, add_time, deleted  FROM workgroup WHERE group_id = '". $this->group_id ."'");
 
 		$this->group_data = null;
 		if($sql_result) {
 			$this->group_data = $sql_result->fetch_object();
+			# 存入memcache
+			$this->data_access->memcache()->set('group:' . $this->group_id, false, 36800);
 			$sql_result->free_result();
 		}
 	}
@@ -106,16 +114,7 @@ class Group {
      */
     public function getGroupIntro()
     {
-        return new PopgoText($this->group_data->intro);
-    }
-
-    /**
-     * 获取组的组长
-     * @return mixed
-     */
-    public function getGroupLeader()
-    {
-        return $this->group_data->groupleader;
+        return new PopgoText($this->group_data->group_intro);
     }
 
     /**
@@ -124,7 +123,7 @@ class Group {
      */
     public function getGroupName()
     {
-        return $this->group_data->groupname;
+        return $this->group_data->group_name;
     }
 
 	/**
@@ -132,7 +131,7 @@ class Group {
 	 * @return int
 	 */
 	public function getGroupAddTime() {
-		return $this->group_data->addtime;
+		return $this->group_data->add_time;
 	}
 
 	/**
@@ -140,7 +139,7 @@ class Group {
 	 * @return mixed
 	 */
 	public function getGroupIsDisable() {
-		return !!$this->group_data->disabled;
+		return !!$this->group_data->deleted;
 	}
 
 	/**
@@ -148,7 +147,7 @@ class Group {
 	 * @return mixed
 	 */
 	public function getGroupRight() {
-		return $this->group_data->right;
+		return $this->group_data->group_weight;
 	}
 
 	/**
@@ -156,7 +155,7 @@ class Group {
 	 * @return mixed
 	 */
 	public function getGroupUrl() {
-		return $this->group_data->url;
+		return $this->group_data->group_url;
 	}
 
 
@@ -165,7 +164,7 @@ class Group {
 	 * @return bool
 	 */
 	public function exists(){
-		return !!$this->getGroupData() AND !$this->getGroupIsDisable();
+		return !!$this->getGroupData();
 	}
 
     /**
@@ -184,8 +183,8 @@ class Group {
             if($this->check_same_group_name($group_name)){
                 return false;
             }
-
-            $this->data_access->mysql()->query("INSERT INTO groups (groupname, disabled, `right`, url, intro, addtime) VALUES (' $this->data_access->mysql()->escape_string($group_name) ', 0, ' $group_right ', ' $this->data_access->mysql()->escape_string($url) ', ' $this->data_access->mysql()->escape_string($intro) ', time()");
+			$date = new \DateTime();
+            $this->data_access->mysql()->query("INSERT INTO workgroup (group_name, deleted, group_weight, group_url, group_intro, add_time) VALUES (' $this->data_access->mysql()->escape_string($group_name) ', 0, ' $group_right ', ' $this->data_access->mysql()->escape_string($url) ', ' $this->data_access->mysql()->escape_string($intro) ', $date");
             $this->data_access->mysql()->commit();
             $this->clear_cache();
             return true;
@@ -210,9 +209,9 @@ class Group {
                 return false;
             }
             $disabled = $disabled ? 1 : 0;
-            $this->data_access->mysql()->query("UPDATE groups SET groupname = ' $this->data_access->mysql()->escape_string($group_name)  ', intro = ' $this->data_access->mysql()->escape_string($intro) ', `right` = ' $this->data_access->mysql()->escape_string($group_right) ', url=' $this->data_access->mysql()->escape_string($url) ', `disabled`=' $this->data_access->mysql()->escape_string($disabled) ' WHERE groupid = ' $this->data_access->mysql()->escape_string($disabled) '");
+            $this->data_access->mysql()->query("UPDATE workgroup SET group_name = ' $this->data_access->mysql()->escape_string($group_name)  ', group_intro = ' $this->data_access->mysql()->escape_string($intro) ', group_weight = ' $this->data_access->mysql()->escape_string($group_right) ', group_url=' $this->data_access->mysql()->escape_string($url) ', deleted=' $this->data_access->mysql()->escape_string($disabled) ' WHERE group_id = ' $this->data_access->mysql()->escape_string($disabled) '");
             $this->data_access->mysql()->commit();
-            $this->clear_cache();
+            $this->clear_cache($group_id);
             return true;
         }
         return false;
@@ -226,7 +225,7 @@ class Group {
         // 首先检查cache的内容
         $data_packet = Data_access::get_instance()->memcache()->get('group_all');
         if(!$data_packet){
-            $group_data = Data_access::get_instance()->mysql()->query("SELECT groupid, groupname, intro, `right`, url, addtime, `disabled`  FROM groups ORDER BY `right` DESC");
+            $group_data = Data_access::get_instance()->mysql()->query("SELECT group_id, group_name, group_intro, group_weight, group_url, add_time, deleted  FROM workgroup ORDER BY group_weight DESC");
             $data_packet = array();
             foreach($group_data as $x){
                 array_push($data_packet, $x);
@@ -252,7 +251,7 @@ class Group {
      * @return bool
      */
     public function check_same_group_name($name){
-        $same_name_res = $this->data_access->mysql()->query(" SELECT groupid FROM groups WHERE groupname = ' $this->data_access->mysql()->escape_string($name) '");
+        $same_name_res = $this->data_access->mysql()->query(" SELECT group_id FROM workgroup WHERE group_name = ' $this->data_access->mysql()->escape_string($name) '");
         if($same_name_res->field_count){
             return true;
         }
@@ -262,7 +261,10 @@ class Group {
     /**
      * 清空缓存
      */
-    private function clear_cache(){
+    private function clear_cache($group_id=null){
         $this->data_access->memcache()->delete('group_all');
+	    if($group_id){
+		    $this->data_access->memcache()->delete('group:' . $group_id);
+	    }
     }
 }

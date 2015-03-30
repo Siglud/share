@@ -26,12 +26,12 @@ class Bangumi {
 	 * 注意这个初始化有一个坑，当$bid为0或者空变量的时候，不会被正确的初始化，那么exists会报告500错误，解决它最简单的办法就是——不要设置任何为0的
 	 * bid
 	 */
-	public function __construct($bid=null, $bangumi_data=null){
-		if($bid){
-			$this->bid = (int) $bid;
+	public function __construct($bangumi_id=null, $bangumi_data=null){
+		if($bangumi_id){
+			$this->bangumi_id = (int) $bangumi_id;
 		}
 		if($bangumi_data){
-			$this->bid = (int) $bangumi_data->id;
+			$this->bangumi_id = (int) $bangumi_data->id;
 			$this->bangumi_data = $bangumi_data;
 		}
 
@@ -50,11 +50,11 @@ class Bangumi {
 	}
 
 	private function init_from_database(){
-		if(!$this->bid){
+		if(!$this->bangumi_id){
 			$this->bangumi_data = null;
 			return;
 		}
-		$sql = "SELECT id, title, start_time, end_time, website, image, search_name, play_time FROM bangumi WHERE id = '$this->bid'";
+		$sql = "SELECT bangumi_id, title, start_time, end_time, website, image, search_word, play_time, deleted FROM bangumi WHERE bangumi_id = '$this->bangumi_id'";
 
 		$sql_res = $this->dao->mysql()->query($sql);
 
@@ -69,7 +69,7 @@ class Bangumi {
 	/*判断是否存在
 	 * */
 	function exists(){
-		return $this->bid AND $this->bangumi_data;
+		return $this->bangumi_id AND $this->bangumi_data;
 	}
 
 	/*
@@ -124,7 +124,7 @@ class Bangumi {
 	 * */
 	function get_search_name(){
 		if(!$this->search_name){
-			$this->search_name = new PopgoText($this->bangumi_data->search_name);
+			$this->search_name = new PopgoText($this->bangumi_data->search_word);
 		}
 		return $this->search_name;
 	}
@@ -136,6 +136,10 @@ class Bangumi {
 			$this->play_time = $this->bangumi_data->play_time;
 		}
 		return $this->play_time;
+	}
+
+	function is_deleted(){
+		return !!$this->bangumi_data->deleted;
 	}
 
 	/*
@@ -181,7 +185,7 @@ class Bangumi {
 		if($cache_data){
 			$bangumi_data = json_decode($cache_data);
 		}else {
-			$sql = "SELECT id, title, start_time, end_time, website, image, search_name, play_time FROM bangumi WHERE start_time < $now AND (end_time > $now OR end_time = 0)";
+			$sql = "SELECT bangumi_id, title, start_time, end_time, website, image, search_word, play_time, deleted FROM bangumi WHERE start_time < $now AND (end_time > $now OR end_time = 0)";
 			$bangumi_data = Data_access::get_instance()->mysql()->query( $sql );
 
 			$data_packet = array();

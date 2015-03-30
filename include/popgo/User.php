@@ -22,19 +22,19 @@ class User {
 
 	private $user_name;
 	/**
-	 * @param string $user_id
+	 * @param int $user_id
 	 * @param object $user_data
 	 */
-	function __construct($user_id="", $user_data=null)
+	function __construct($user_id=null, $user_data=null)
     {
 	    $this->dao = Data_access::get_instance();
 
-        if(is_numeric($user_id)){
-            $this->user_id = $user_id;
+        if($user_id && is_numeric($user_id)){
+            $this->user_id = (int) $user_id;
         }
 	    if($user_data){
 		    $this->user_data = $user_data;
-		    $this->user_id = $user_data->userid;
+		    $this->user_id = $user_data->user_id;
 	    }
     }
 
@@ -54,7 +54,7 @@ class User {
 		    $this->user_data = null;
 		    return;
 	    }
-        $sql = 'SELECT userid, username, groupid, advuser, disabled, email, uploaders, lastlogin  FROM user WHERE userid = ' . $this->user_id;
+        $sql = 'SELECT user_id, login_name, email, login_pass, upload_count, last_login, deleted  FROM site_user WHERE user_id = ' . $this->dao->mysql()->escape_string($this->user_id);
         $sql_result = $this->dao->mysql()->query($sql);
 
 	    $this->user_data = null;
@@ -77,15 +77,7 @@ class User {
      * @return mixed
      */
     public function getDisabled(){
-        return $this->user_data->disabled ? True : False;
-    }
-
-    /**
-     * 获取用户是否是高级用户
-     * @return mixed
-     */
-    public function getIsAdvUser(){
-        return $this->user_data->advuser ? True : False;
+        return $this->user_data->deleted ? True : False;
     }
 
     /**
@@ -111,7 +103,7 @@ class User {
      */
     public function getUserName(){
         if(!$this->user_name){
-	        $this->user_name = new PopgoText($this->user_data->username);
+	        $this->user_name = new PopgoText($this->user_data->login_name);
         }
 	    return $this->user_name;
     }
@@ -121,7 +113,7 @@ class User {
 	 * @return int
 	 */
 	public function getUploadCount(){
-		return (int) $this->user_data->uploaders;
+		return (int) $this->user_data->upload_count;
 	}
 
 	/**
@@ -130,11 +122,16 @@ class User {
 	 */
 	public function getGroup(){
 		if(!$this->group){
-            $groups = explode(',', $this->user_data->groupid);
-            $this->group = array();
-            foreach($groups as $group){
-                array_push($this->group, new Group($group));
-            }
+			$this->group = null;
+			if($this->exists()){
+				$sql_result = $this->dao->mysql()->query("SELECT group_id FROM user_group WHERE user_id = '$this->user_id'");
+				if($sql_result){
+					$this->group = array();
+					while($group_id = $sql_result->fetch_object()){
+						array_push($this->group, new Group($group_id));
+					}
+				}
+			}
 		}
 		return $this->group;
 	}

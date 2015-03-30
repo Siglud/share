@@ -39,7 +39,7 @@ class DownloadStatus {
 	}
 
 	private function init_from_database(){
-		$sql = "SELECT a.id, f.completed, f.seeders, f.leechers FROM allowed_ex a LEFT JOIN xbt_files f ON a.bhash = f.info_hash WHERE a.id = '$this->sid'";
+		$sql = "SELECT a.sid, f.completed, f.seeders, f.leechers FROM share_basic a LEFT JOIN xbt_files f ON a.sid = f.sid WHERE a.sid = '$this->sid'";
 
 		$res = $this->dao->mysql()->query($sql);
 		if(!$res){

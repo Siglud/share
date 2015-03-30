@@ -27,14 +27,14 @@ class SiteShare {
 		$category = (int) $category;
 		$number = (int) $number;
 		if($number > 0){
-			$sql = "SELECT id FROM allowed_ex WHERE sortid = '$category' LIMIT 0, $number";
+			$sql = "SELECT sid FROM share_basic WHERE category_id = '$category' LIMIT 0, $number";
 
 			$sql_res = $this->dao->mysql()->query($sql);
 
 			$sid_list = array();
 			if($sql_res){
 				while($sid = $sql_res->fetch_object()){
-					array_push($sid_list, $sid->id);
+					array_push($sid_list, $sid->sid);
 				}
 			}
 
@@ -67,7 +67,7 @@ class SiteShare {
 			}
 			# do query if not all get
 			if($need_sql_sid) {
-				$sql = "SELECT a.addedtime, a.bhash, a.bname, a.filesize, t.seeders, t.leechers, a.userid, a.settop, a.ingroup, a.description, u.username, g.groupname, s.sortname, a.havezip, a.downtimes, a.changelog, a.fileslist, a.grouptop, a.id, a.emule, a.hashCode FROM allowed_ex AS a LEFT JOIN user AS u ON a.userid=u.userid LEFT JOIN groups AS g ON a.ingroup=g.groupid LEFT JOIN xbt_files AS t ON a.bhash=t.info_hash LEFT JOIN sort AS s ON a.sortid = s.sortid WHERE a.disabled != 1 AND a.id IN (" . implode( ',', $need_sql_sid ) . ")";
+				$sql = "SELECT * FROM share_basic b LEFT JOIN share_extend e ON b.sid = e.sid LEFT JOIN xbt_files x ON b.sid = x.sid LEFT JOIN site_user u ON b.user_id = u.user_id LEFT JOIN category c ON b.category_id = c.category_id WHERE b.deleted = 0 AND b.sid IN (" . implode( ',', $need_sql_sid ) . ")";
 				$res = $this->dao->mysql()->query( $sql );
 
 				if ( $res ) {
@@ -75,7 +75,7 @@ class SiteShare {
 					while ( $data_packet = $res->fetch_object() ) {
 						$cache_res[$data_packet->id] = $data_packet;
 						# 存入redis, 存入的时候可以考虑更长一点时间，如果主体信息发生变化，由变更端主动删除此键值
-						$this->dao->memcache()->set('seed:'. $data_packet->id, json_encode($data_packet), 86400);
+						$this->dao->memcache()->set('seed:'. $data_packet->id, json_encode($data_packet), false, 86400);
 					}
 				}
 				$res->free_result();
