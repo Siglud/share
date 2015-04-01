@@ -23,8 +23,6 @@ class ShareList {
 
 	public function __construct($data_source){
 
-		$this->group_info = new Group(null, $data_source);
-
 		$this->user_info = new User(null, $data_source);
 
 		$this->share_info = new Share(null, $data_source);
@@ -32,6 +30,13 @@ class ShareList {
 		$this->category_info = new Category(null, $data_source);
 
 		$this->download_info = new DownloadStatus(null, $data_source);
+
+		$this->group_info = array();
+		if(property_exists($data_source, 'group_info')){
+			foreach($data_source->group_info as $group_data){
+				array_push($this->group_info, new Group(null, $group_data));
+			}
+		}
 	}
 
 	/**
